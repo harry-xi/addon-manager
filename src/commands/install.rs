@@ -5,9 +5,25 @@ use anyhow::{anyhow, Context, Result};
 use copy_dir::copy_dir;
 use std::fs;
 use std::io::{self, Read};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use tempfile::tempdir;
 use zip::ZipArchive;
+
+fn get_available_folder<S: AsRef<str>, P: AsRef<Path>>(name: S, target: P) -> PathBuf {
+    let default = target.as_ref().join(name.as_ref());
+    if default.exists() {
+        let mut num = 0;
+        while target
+            .as_ref()
+            .join(format!("{}({})", name.as_ref(), num))
+            .exists()
+        {
+            num = num + 1
+        }
+        return target.as_ref().join(format!("{}({})", name.as_ref(), num));
+    }
+    default
+}
 
 fn install_single_pack<P: AsRef<Path>>(dir: &fs::DirEntry, target: P) -> Result<()> {
     let target = target.as_ref();
@@ -53,12 +69,10 @@ fn install_single_pack<P: AsRef<Path>>(dir: &fs::DirEntry, target: P) -> Result<
             ),
 
             None | Some(_) => {
-                let targe_dir = target
-                    .join(packate_type.get_path_name())
-                    .join(&manifest_info.header.name);
-                if targe_dir.exists() {
-                    fs::remove_dir(&targe_dir)?;
-                }
+                let targe_dir = get_available_folder(
+                    &manifest_info.header.name,
+                    target.join(packate_type.get_path_name()),
+                );
                 match fs::create_dir_all(target.join(packate_type.get_path_name())) {
                     Ok(_) => (),
                     Err(err) => {
@@ -172,11 +186,10 @@ pub fn install<P: AsRef<Path>, P1: AsRef<Path>>(addon: P, target: P1) -> Result<
 
         None | Some(_) => {
             archive
-                .extract(
-                    target
-                        .join(packate_type.get_path_name())
-                        .join(&data.header.name),
-                )
+                .extract(get_available_folder(
+                    &data.header.name,
+                    target.join(packate_type.get_path_name()),
+                ))
                 .with_context(|| {
                     format!(
                         "Failed to extract addon {} to target folder",

@@ -17,13 +17,11 @@ impl ToString for AddonVersion {
 
 impl PartialEq for AddonVersion {
     fn eq(&self, other: &Self) -> bool {
+        use AddonVersion::{Arr, Str};
         match (self, other) {
-            (AddonVersion::Arr(s), AddonVersion::Arr(o)) => s == o,
-            (AddonVersion::Str(s), AddonVersion::Str(o)) => s.inner == o.inner,
-            (AddonVersion::Arr(a), AddonVersion::Str(s))
-            | (AddonVersion::Str(s), AddonVersion::Arr(a)) => {
-                Version::new(a[0], a[1], a[2]) == s.inner
-            }
+            (Arr(s), Arr(o)) => s == o,
+            (Str(s), Str(o)) => s.inner == o.inner,
+            (Arr(a), Str(s)) | (Str(s), Arr(a)) => Version::new(a[0], a[1], a[2]) == s.inner,
         }
     }
 }
@@ -60,7 +58,7 @@ impl Hash for AddonVersion {
     }
 }
 
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 pub struct SemVerStr {
     inner: Version,
 }
@@ -70,7 +68,7 @@ struct SemVerVisitor;
 impl<'de> Visitor<'de> for SemVerVisitor {
     type Value = SemVerStr;
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-        formatter.write_str("must be a string which start with 'test'")
+        formatter.write_str("must be a semver version string")
     }
     fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
     where
