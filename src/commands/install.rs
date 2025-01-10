@@ -3,7 +3,7 @@ use crate::addon::world_packet_list::{to_packet_list_string, InUse};
 use crate::addon::{self, manifest};
 use anyhow::{anyhow, Context, Result};
 use copy_dir::copy_dir;
-use std::fs;
+use std::fs::{self};
 use std::io::{self, Read};
 use std::path::{Path, PathBuf};
 use tempfile::tempdir;
@@ -208,5 +208,25 @@ pub fn install<P: AsRef<Path>, P1: AsRef<Path>>(addon: P, target: P1) -> Result<
             println!("success to install {} [{}]", data.header.name, version_str)
         }
     }
+    Ok(())
+}
+
+pub fn install_all<P: AsRef<Path>, P1: AsRef<Path>>(input: P, target: P1) -> Result<()> {
+    fs::read_dir(input)
+        .with_context(|| "when reading the input dir")?
+        .flatten()
+        .filter(|f| {
+            if let Ok(typ) = f.file_type() {
+                typ.is_file()
+            } else {
+                false
+            }
+        })
+        .map(|file| {
+            install(file.path(), &target)
+                .with_context(|| format!("when install {}", file.file_name().to_string_lossy()))
+        })
+        .filter(|r| r.is_err())
+        .for_each(|r| println!("{}", r.err().unwrap()));
     Ok(())
 }

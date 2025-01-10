@@ -1,12 +1,12 @@
 # Addon Manager
 
-> [!CAUTION]
-> Unstable and with known bugs, be sure to check the list of issues before using it!
+> [!IMPORTANT]
+> Unstable and with known bugs, be sure to check the list of issues before using it.
 
 ## Usage
 
-```
-addon-manager    version:0.1.1
+```Text
+addon-manager    version:0.1.2
 A command line tool for installing and managing addons on bds
 
 Usage: addon-manager [OPTIONS] [FILE] [COMMAND]

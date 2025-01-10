@@ -34,8 +34,11 @@ enum Commands {
     },
     /// install addon to the level.
     Install {
-        /// The addon to be installed.
+        /// The addon to be installed, or when using flag '--dir', the palce you put all addon you want to install.
         file: PathBuf,
+        /// Treat the input as a folder where packages to be installed are stored.
+        #[arg(long)]
+        dir: bool,
     },
     /// Uninstall the addon to install to the level.
     Remove {
@@ -117,7 +120,8 @@ fn main() -> Result<()> {
             // args.file.is_none() && args.command.is_none() (only use command it self) is at start of this function
         }
         Some(Commands::List { resource, behavior }) => list::list(world_path, resource, behavior)?,
-        Some(Commands::Install { file }) => install::install(file, world_path)?,
+        Some(Commands::Install { file, dir: false }) => install::install(file, world_path)?,
+        Some(Commands::Install { file, dir: true }) => install::install_all(file, world_path)?,
         Some(Commands::Remove { name, all }) => remove::remove(name, all, world_path)?,
     }
     Ok(())

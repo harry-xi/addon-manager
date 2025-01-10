@@ -17,11 +17,11 @@ pub fn to_packet_list_string<V: AsRef<Vec<InUse>>>(list: V) -> Result<String, se
     serde_json::to_string(list.as_ref())
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize,Clone)]
 pub struct History {
     pub can_be_redownloaded: bool,
     pub name: String,
-    pub uuin: String,
+    pub uuid: String,
     pub version: AddonVersion,
 }
 
@@ -34,9 +34,12 @@ pub fn pares_packs_history_list<S: AsRef<str>>(str: S) -> Result<HistoryList, se
     serde_json::from_str(str.as_ref())
 }
 
-pub fn to_packs_history_list_string<V: AsRef<HistoryList>>(
-    val: V,
-) -> Result<String, serde_json::Error> {
+pub fn to_packs_history_string<V: AsRef<HistoryList>>(val: V) -> Result<String, serde_json::Error> {
     serde_json::to_string(val.as_ref())
 }
 
+pub fn to_packs_history_list_string<V: AsRef<Vec<History>>>(
+    arr: V,
+) -> Result<String, serde_json::Error> {
+    serde_json::to_string(&HistoryList {packs:arr.as_ref().to_vec()})
+}
