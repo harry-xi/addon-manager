@@ -22,9 +22,15 @@ struct Cli {
 }
 
 #[derive(Subcommand)]
+#[command(args_conflicts_with_subcommands = true)]
 enum Commands {
     /// list all installed addon(s). Default will show all in-use resource and behavior packages.
     List {
+        #[arg(short, long, default_value_t = String::from("Bedrock level") )]
+        /// Declare the name of the world you want to operate on. Invalid when the work path is a level.
+        world: String,
+        #[arg(long)]
+        force_dirtype: Option<DirTypeFlag>,
         /// show resource packages
         #[arg(short, long)]
         resource: bool,
@@ -34,6 +40,11 @@ enum Commands {
     },
     /// install addon to the level.
     Install {
+        #[arg(short, long, default_value_t = String::from("Bedrock level") )]
+        /// Declare the name of the world you want to operate on. Invalid when the work path is a level.
+        world: String,
+        #[arg(long)]
+        force_dirtype: Option<DirTypeFlag>,
         /// The addon to be installed, or when using flag '--dir', the palce you put all addon you want to install.
         file: PathBuf,
         /// Treat the input as a folder where packages to be installed are stored.
@@ -42,6 +53,11 @@ enum Commands {
     },
     /// Uninstall the addon to install to the level.
     Remove {
+        #[arg(short, long, default_value_t = String::from("Bedrock level") )]
+        /// Declare the name of the world you want to operate on. Invalid when the work path is a level.
+        world: String,
+        #[arg(long)]
+        force_dirtype: Option<DirTypeFlag>,
         /// Name or uuid of the Addon to be uninstalled.
         name: String,
         /// Uninstall both behavior and resource packages with the same name.
@@ -84,6 +100,23 @@ impl From<DirTypeFlag> for WorkDirType {
     }
 }
 
+fn get_world_path(world:&str,force_dirtype: Option<DirTypeFlag>) -> Result<PathBuf>{
+    let workdir = std::env::current_dir()?;
+    let work_dir_type = if let Some(typ) = force_dirtype {
+        typ.into()
+    } else {
+        get_work_path_type(&workdir)?
+    };
+
+    if work_dir_type == WorkDirType::Bds && !workdir.join("worlds").join(world).exists() {
+        return Err(anyhow!("world {} not exists", world));
+    }
+    Ok(match work_dir_type {
+        WorkDirType::Bds => workdir.join("worlds").join(world),
+        WorkDirType::Level => workdir,
+    })
+}
+
 fn main() -> Result<()> {
     let args = Cli::parse();
     if args.file.is_none() && args.command.is_none() {
@@ -97,32 +130,17 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
-    let workdir = std::env::current_dir()?;
-    let work_dir_type = if let Some(typ) = args.force_dirtype {
-        typ.into()
-    } else {
-        get_work_path_type(&workdir)?
-    };
-
-    if work_dir_type == WorkDirType::Bds && !workdir.join("worlds").join(&args.world).exists() {
-        return Err(anyhow!("world {} not exists", &args.world));
-    }
-    let world_path = match work_dir_type {
-        WorkDirType::Bds => workdir.join("worlds").join(&args.world),
-        WorkDirType::Level => workdir,
-    };
-
     match args.command {
         None => {
             if let Some(file) = args.file {
-                install::install(file, world_path)?;
+                install::install(file, get_world_path(&args.world,args.force_dirtype)?)?;
             }
             // args.file.is_none() && args.command.is_none() (only use command it self) is at start of this function
         }
-        Some(Commands::List { resource, behavior }) => list::list(world_path, resource, behavior)?,
-        Some(Commands::Install { file, dir: false }) => install::install(file, world_path)?,
-        Some(Commands::Install { file, dir: true }) => install::install_all(file, world_path)?,
-        Some(Commands::Remove { name, all }) => remove::remove(name, all, world_path)?,
+        Some(Commands::List {world, force_dirtype, resource, behavior  }) => list::list(get_world_path(&world,force_dirtype)?, resource, behavior)?,
+        Some(Commands::Install {world, force_dirtype, file, dir: false }) => install::install(file, get_world_path(&world,force_dirtype)?)?,
+        Some(Commands::Install {world, force_dirtype, file, dir: true }) => install::install_all(file, get_world_path(&world,force_dirtype)?)?,
+        Some(Commands::Remove {world, force_dirtype, name, all }) => remove::remove(name, all, get_world_path(&world,force_dirtype)?)?,
     }
     Ok(())
 }

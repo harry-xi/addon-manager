@@ -5,11 +5,26 @@
 
 ## Usage
 
-```Text
-addon-manager    version:0.1.2
+### 1. To install a package with defualt settings
+
+```bash
+addon-manager install /path/to/your_package.mcpack  # (or *.mcaddon / *.zip)
+```
+
+or just use
+
+```bash
+addon-manager /path/to/your_package.mcpack  # (or *.mcaddon / *.zip)
+```
+
+### The out put of subcammnd help
+
+```text
+addon-manager    version:0.2.0
 A command line tool for installing and managing addons on bds
 
-Usage: addon-manager [OPTIONS] [FILE] [COMMAND]
+Usage: addon-manager [OPTIONS] [FILE]
+       addon-manager <COMMAND>
 
 Commands:
   list     list all installed addon(s). Default will show all in-use resource and behavior packages
